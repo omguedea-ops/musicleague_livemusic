@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Music League — Live Edition</title>
+<style>
+:root{
+  font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  color:#17243b;background:#f4efe5
+}
+*{box-sizing:border-box}
+body{margin:0;background:#f4efe5;color:#17243b}
+body:before{content:"";position:fixed;inset:0 0 auto 0;height:3px;background:#173b72;z-index:20}
+.wrap{max-width:1080px;margin:auto;padding:34px 22px 70px}
+.brand{display:flex;align-items:center;gap:13px;margin-bottom:28px}
+.brand img{width:52px;height:52px;object-fit:cover;border-radius:50%;border:1px solid rgba(23,59,114,.16);box-shadow:0 2px 10px rgba(20,34,55,.08)}
+.brandcopy{line-height:1}.brandname{font-size:.78rem;letter-spacing:.18em;text-transform:uppercase;font-weight:750;color:#173b72}
+.brandtag{font-family:Georgia,"Times New Roman",serif;font-size:1.55rem;margin-top:7px;color:#17243b}
+h1{display:none}h2{font-family:Georgia,"Times New Roman",serif;font-size:1.35rem;font-weight:500;margin:0 0 10px}
+.sub{display:none}.help{color:#687184;font-size:.88rem;line-height:1.55}
+.card{background:#fbf8f1;border:1px solid #ded7ca;border-radius:16px;padding:20px;margin-top:16px;box-shadow:0 8px 30px rgba(31,42,61,.045)}
+textarea{width:100%;min-height:170px;background:#fffdf8;color:#17243b;border:1px solid #d8d1c5;border-radius:10px;padding:13px;font:13px ui-monospace,SFMono-Regular,Consolas,monospace;outline:none}
+textarea:focus{border-color:#173b72;box-shadow:0 0 0 3px rgba(23,59,114,.08)}
+button{border:1px solid #cfc8bb;background:transparent;color:#17243b;padding:10px 14px;border-radius:999px;cursor:pointer;font-weight:650;transition:.15s ease}
+button:hover{background:#eee8dd;border-color:#bcb4a6}.primary{background:#173b72;color:#fff;border-color:#173b72}.primary:hover{background:#102f5f}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+#error{color:#9d3c36;white-space:pre-wrap;margin-top:10px;font-size:.9rem}#status{color:#38684a;margin-top:10px;font-size:.9rem}
+#yt{width:100%;aspect-ratio:16/9;background:#0b1320;border-radius:12px;overflow:hidden;box-shadow:0 10px 28px rgba(14,27,48,.12)}
+.hidden{display:none}
+.now{display:flex;justify-content:space-between;gap:12px;align-items:flex-end;margin:18px 1px 7px}
+.now strong{font-family:Georgia,"Times New Roman",serif;font-size:1.5rem;font-weight:500}.range{color:#7a8190;font-variant-numeric:tabular-nums;font-size:.88rem}
+.progress{height:3px;background:#d9d4ca;border-radius:99px;overflow:hidden;margin:12px 1px}.bar{height:100%;width:0;background:#173b72}
+.tracklist{display:grid;gap:0;margin-top:20px;border-top:1px solid #ded7ca}
+.track{display:flex;justify-content:space-between;gap:12px;padding:13px 4px;border:0;border-bottom:1px solid #ded7ca;background:transparent;cursor:pointer}
+.track:hover{background:rgba(255,255,255,.35)}.track.active{color:#173b72}.track.active strong:before{content:"●";font-size:.52rem;margin-right:9px;vertical-align:middle}
+.track small{color:#8a8f99}.track.active small{color:#173b72}
+code{background:#eee8dd;padding:2px 5px;border-radius:4px;color:#173b72}
+.mode{display:inline-block;border:1px solid #d2cabd;border-radius:99px;padding:5px 9px;color:#737b89;font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;margin:0 0 5px}
+#playerCard h2{font-size:.82rem;font-family:inherit;text-transform:uppercase;letter-spacing:.14em;color:#737b89;font-weight:700}
+.footerline{text-align:center;color:#9a958d;font-size:.75rem;margin-top:30px;letter-spacing:.08em;text-transform:uppercase}
+@media(max-width:650px){.wrap{padding:26px 14px 50px}.brandtag{font-size:1.3rem}.brand img{width:46px;height:46px}.card{padding:14px}.now{align-items:flex-start;flex-direction:column}.now strong{font-size:1.3rem}}
+</style></head>
+<body><div class="wrap">
+<div class="brand">
+  <img src="group-mark.jpg" alt="Identidad del grupo">
+  <div class="brandcopy">
+    <div class="brandname">Music League</div>
+    <div class="brandtag">Live Edition</div>
+  </div>
+</div>
+<div class="mode" id="mode">Modo editor</div>
+
+<div class="card" id="editor">
+<h2>1. Pega las submissions</h2>
+<p class="help"><code>Selección | URL de YouTube | inicio | fin</code>. Ejemplo: <code>Selección 01 | https://youtu.be/xxxxx | 24:53 | 29:30</code></p>
+<textarea id="input" spellcheck="false">Selección 01 | https://www.youtube.com/watch?v=9HfVANO4IWg&list=PLFBmEcheEmkA | 24:53 | 29:30
+Selección 02 | https://www.youtube.com/watch?v=UEqTIwRrWvA | 02:40 | 05:50
+Selección 03 | https://www.youtube.com/watch?v=4ksu86psqPU | 01:00 | 04:00</textarea>
+<div class="actions">
+<button class="primary" onclick="buildFromInput()">Generar playlist</button>
+<button onclick="makeShareLink()">Copiar link compartible</button>
+<button onclick="downloadRound()">Descargar ronda HTML</button>
+<button onclick="clearInput()">Limpiar</button>
+</div>
+<div id="error"></div><div id="status"></div>
+<p class="help">El link compartible guarda la ronda en la parte <code>#</code> de la URL; no requiere base de datos. Primero publica este archivo en un host HTTPS como GitHub Pages y después genera el link.</p>
+</div>
+
+<div class="card hidden" id="playerCard">
+<h2 id="roundTitle">2. Reproduce la ronda</h2>
+<div id="yt"></div>
+<div class="now"><strong id="title"></strong><span class="range" id="range"></span></div>
+<div class="progress"><div class="bar" id="bar"></div></div>
+<div class="actions">
+<button onclick="previous()">← Anterior</button><button onclick="restart()">↻ Reiniciar</button>
+<button onclick="togglePlay()">▶ / ❚❚</button><button onclick="next()">Siguiente →</button>
+</div>
+<div class="tracklist" id="tracklist"></div>
+<p class="help">YouTube puede requerir un primer clic en Play antes de permitir reproducción automática. Videos con embedding deshabilitado por su propietario tampoco podrán reproducirse aquí.</p>
+</div>
+<div class="footerline">One song · One performance · Live</div>
+</div>
+<script>
+let tracks=[],current=0,player=null,timer=null,apiRequested=false;
+function parseTime(x){x=x.trim();if(!/^\d{1,3}:\d{2}(:\d{2})?$/.test(x))return NaN;let p=x.split(":").map(Number);if(p.some(n=>!Number.isFinite(n))||p.some((n,i)=>i>0&&n>59))return NaN;return p.length===2?p[0]*60+p[1]:p[0]*3600+p[1]*60+p[2]}
+function fmt(s){s=Math.max(0,Math.floor(s));let h=Math.floor(s/3600),m=Math.floor((s%3600)/60),z=s%60;return h?`${h}:${String(m).padStart(2,"0")}:${String(z).padStart(2,"0")}`:`${String(m).padStart(2,"0")}:${String(z).padStart(2,"0")}`}
+function videoId(url){try{let u=new URL(url.trim());if(u.hostname.includes("youtu.be"))return u.pathname.split("/").filter(Boolean)[0];if(u.pathname.startsWith("/shorts/")||u.pathname.startsWith("/embed/"))return u.pathname.split("/")[2];return u.searchParams.get("v")}catch(e){return null}}
+function parseLines(txt){let lines=txt.split(/\n/).map(x=>x.trim()).filter(Boolean),a=[],errs=[];lines.forEach((line,i)=>{let p=line.split("|").map(x=>x.trim());if(p.length<4){errs.push(`Línea ${i+1}: faltan campos.`);return}let id=videoId(p[1]),s=parseTime(p[2]),e=parseTime(p[3]);if(!id){errs.push(`Línea ${i+1}: URL no reconocida.`);return}if(!Number.isFinite(s)||!Number.isFinite(e)||e<=s){errs.push(`Línea ${i+1}: timestamps inválidos.`);return}a.push({name:p[0]||`Selección ${String(i+1).padStart(2,"0")}`,id,start:s,end:e})});return {a,errs}}
+function buildFromInput(){let r=parseLines(document.getElementById("input").value);document.getElementById("error").textContent=r.errs.join("\n");document.getElementById("status").textContent="";if(r.errs.length||!r.a.length)return;tracks=r.a;current=0;showPlayer()}
+function showPlayer(){document.getElementById("playerCard").classList.remove("hidden");render();if(window.YT&&YT.Player)initOrLoad();else if(!apiRequested){apiRequested=true;let s=document.createElement("script");s.src="https://www.youtube.com/iframe_api";document.body.appendChild(s)}}
+function onYouTubeIframeAPIReady(){if(tracks.length)initOrLoad()}
+function initOrLoad(){let t=tracks[current];if(player&&player.loadVideoById){load(current,false);return}player=new YT.Player("yt",{videoId:t.id,playerVars:{start:t.start,end:t.end,playsinline:1,rel:0,origin:location.origin.startsWith("http")?location.origin:undefined},events:{onReady:render,onStateChange:onState,onError:e=>{document.getElementById("error").textContent=`YouTube devolvió error ${e.data} en ${tracks[current].name}.`}}})}
+function onState(e){clearInterval(timer);if(e.data===YT.PlayerState.PLAYING){timer=setInterval(()=>{let t=tracks[current],now=player.getCurrentTime(),pct=Math.max(0,Math.min(100,(now-t.start)/(t.end-t.start)*100));document.getElementById("bar").style.width=pct+"%";if(now>=t.end-.2){clearInterval(timer);next()}},200)}}
+function render(){if(!tracks.length)return;let t=tracks[current];document.getElementById("title").textContent=t.name;document.getElementById("range").textContent=`${fmt(t.start)} – ${fmt(t.end)} · ${fmt(t.end-t.start)}`;document.getElementById("bar").style.width="0%";let box=document.getElementById("tracklist");box.innerHTML="";tracks.forEach((x,i)=>{let d=document.createElement("div");d.className="track"+(i===current?" active":"");d.innerHTML=`<strong>${esc(x.name)}</strong><small>${fmt(x.start)} – ${fmt(x.end)} · ${fmt(x.end-x.start)}</small>`;d.onclick=()=>load(i,true);box.appendChild(d)})}
+function load(i,play=true){current=(i+tracks.length)%tracks.length;render();let t=tracks[current];if(player&&player.loadVideoById){play?player.loadVideoById({videoId:t.id,startSeconds:t.start,endSeconds:t.end}):player.cueVideoById({videoId:t.id,startSeconds:t.start,endSeconds:t.end})}}
+function next(){load(current+1,true)}function previous(){load(current-1,true)}function restart(){if(player){player.seekTo(tracks[current].start,true);player.playVideo()}}function togglePlay(){if(!player)return;player.getPlayerState()===YT.PlayerState.PLAYING?player.pauseVideo():player.playVideo()}
+function esc(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
+function encodeRound(a){return btoa(unescape(encodeURIComponent(JSON.stringify(a)))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")}
+function decodeRound(x){x=x.replace(/-/g,"+").replace(/_/g,"/");while(x.length%4)x+="=";return JSON.parse(decodeURIComponent(escape(atob(x))))}
+async function makeShareLink(){if(!tracks.length)buildFromInput();if(!tracks.length)return;if(!location.protocol.startsWith("http")){document.getElementById("error").textContent="Publica primero index.html en GitHub Pages/otro host HTTPS; desde file:// el link seguirá teniendo el problema de YouTube.";return}let url=location.origin+location.pathname+"#r="+encodeRound(tracks);try{await navigator.clipboard.writeText(url);document.getElementById("status").textContent="Link compartible copiado al portapapeles."}catch(e){prompt("Copia este link:",url)}}
+function downloadRound(){if(!tracks.length)buildFromInput();if(!tracks.length)return;let base=location.href.split("#")[0],url=base+"#r="+encodeRound(tracks);let html=`<!doctype html><meta charset="utf-8"><title>Music League Live</title><meta http-equiv="refresh" content="0;url=${url.replace(/"/g,"&quot;")}"><p>Abriendo ronda… <a href="${url.replace(/"/g,"&quot;")}">Continuar</a></p>`;let b=new Blob([html],{type:"text/html"}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="music-league-ronda.html";a.click();URL.revokeObjectURL(a.href)}
+function clearInput(){document.getElementById("input").value="";document.getElementById("error").textContent="";document.getElementById("status").textContent=""}
+(function boot(){if(location.hash.startsWith("#r=")){try{tracks=decodeRound(location.hash.slice(3));document.getElementById("editor").classList.add("hidden");document.getElementById("mode").textContent="Modo ronda compartida";document.getElementById("roundTitle").textContent="Playlist";showPlayer()}catch(e){document.getElementById("error").textContent="No pude leer la playlist del enlace."}}})();
+</script></body></html>

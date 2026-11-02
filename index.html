@@ -48,20 +48,48 @@ code{background:#eee8dd;padding:2px 5px;border-radius:4px;color:#173b72}
 .tabbtn.active{background:#173b72;color:#fff;box-shadow:0 2px 8px rgba(23,59,114,.14)}
 .sidepane{display:none}.sidepane.active{display:block}
 .side-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.14em;color:#737b89;font-weight:750;margin-bottom:8px}
+
+.theme-toggle{margin-left:auto;display:flex;align-items:center;gap:8px}
+.theme-toggle button{padding:8px 12px;font-size:.78rem}
+body.dark{background:#101722;color:#e8e2d7}
+body.dark:before{background:#6f98cf}
+body.dark .brandname{color:#8eb2e2}
+body.dark .brandtag{color:#f2ede4}
+body.dark .card{background:#161f2c;border-color:#2b3747;box-shadow:0 8px 30px rgba(0,0,0,.14)}
+body.dark textarea,body.dark #roundName{background:#0f1722!important;color:#e9e4dc!important;border-color:#344153!important}
+body.dark button{border-color:#3a485a;color:#e9e4dc}
+body.dark button:hover{background:#202c3b;border-color:#526177}
+body.dark .primary{background:#7399ca;color:#0d1724;border-color:#7399ca}
+body.dark .help{color:#a9b1bd}
+body.dark .mode{border-color:#394759;color:#aab3c0}
+body.dark code{background:#0e1621;color:#9ebbe0}
+body.dark .progress{background:#344052}
+body.dark .bar{background:#7399ca}
+body.dark .tracklist,body.dark .track{border-color:#2c3949}
+body.dark .track:hover{background:rgba(255,255,255,.035)}
+body.dark .track.active,body.dark .track.active small{color:#8eb2e2}
+body.dark .track small{color:#9ca5b2}
+body.dark .tabs{background:#202a37}
+body.dark .tabbtn{color:#aeb7c4;border-color:transparent}
+body.dark .tabbtn:hover{background:#2a3646}
+body.dark .tabbtn.active{background:#7399ca;color:#101722}
+body.dark #playerCard h2,body.dark .side-label{color:#aab3c0}
+body.dark .footerline{color:#7f8997}
 </style></head>
 <body><div class="wrap">
 <div class="brand">
   <img src="group-mark.jpg" alt="Identidad del grupo">
   <div class="brandcopy">
     <div class="brandname">Soundwaves Music League</div>
-    <div class="brandtag">Live Edition</div>
+    <div class="brandtag" id="brandtag">Live Edition</div>
   </div>
+  <div class="theme-toggle"><button id="themeBtn" onclick="toggleTheme()">☾ Modo nocturno</button></div>
 </div>
 <div class="mode" id="mode">Modo editor</div>
 
 <div class="card" id="editor">
 <h2>1. Pega las submissions</h2>
-<p class="help"><code>Selección | URL de YouTube | inicio | fin</code>. Cada lado genera su propia playlist.</p>
+<p class="help">Fragmento: <code>Selección | URL | inicio | fin</code><br>Video completo: <code>Selección | URL</code>. Cada lado genera su propia playlist.</p>
 
 <div class="tabs">
 <button class="tabbtn active" id="editTabA" onclick="switchEditor('A')">Lado A</button>
@@ -71,7 +99,7 @@ code{background:#eee8dd;padding:2px 5px;border-radius:4px;color:#173b72}
 <div class="sidepane active" id="editA">
 <div class="side-label">Submissions · Lado A</div>
 <textarea id="inputA" spellcheck="false">Selección 01 | https://www.youtube.com/watch?v=9HfVANO4IWg | 24:53 | 29:30
-Selección 02 | https://www.youtube.com/watch?v=UEqTIwRrWvA | 02:40 | 05:50</textarea>
+Selección 02 | https://www.youtube.com/watch?v=UEqTIwRrWvA</textarea>
 </div>
 
 <div class="sidepane" id="editB">
@@ -112,7 +140,7 @@ let sides={A:[],B:[]},activeSide="A",tracks=[],current=0,player=null,timer=null,
 function parseTime(x){x=x.trim();if(!/^\d{1,3}:\d{2}(:\d{2})?$/.test(x))return NaN;let p=x.split(":").map(Number);if(p.some(n=>!Number.isFinite(n))||p.some((n,i)=>i>0&&n>59))return NaN;return p.length===2?p[0]*60+p[1]:p[0]*3600+p[1]*60+p[2]}
 function fmt(s){s=Math.max(0,Math.floor(s));let h=Math.floor(s/3600),m=Math.floor((s%3600)/60),z=s%60;return h?`${h}:${String(m).padStart(2,"0")}:${String(z).padStart(2,"0")}`:`${String(m).padStart(2,"0")}:${String(z).padStart(2,"0")}`}
 function videoId(url){try{let u=new URL(url.trim());if(u.hostname.includes("youtu.be"))return u.pathname.split("/").filter(Boolean)[0];if(u.pathname.startsWith("/shorts/")||u.pathname.startsWith("/embed/"))return u.pathname.split("/")[2];return u.searchParams.get("v")}catch(e){return null}}
-function parseLines(txt,label){let lines=txt.split(/\n/).map(x=>x.trim()).filter(Boolean),a=[],errs=[];lines.forEach((line,i)=>{let p=line.split("|").map(x=>x.trim());if(p.length<4){errs.push(`${label}, línea ${i+1}: faltan campos.`);return}let id=videoId(p[1]),s=parseTime(p[2]),e=parseTime(p[3]);if(!id){errs.push(`${label}, línea ${i+1}: URL no reconocida.`);return}if(!Number.isFinite(s)||!Number.isFinite(e)||e<=s){errs.push(`${label}, línea ${i+1}: timestamps inválidos.`);return}a.push({name:p[0]||`Selección ${String(i+1).padStart(2,"0")}`,id,start:s,end:e})});return {a,errs}}
+function parseLines(txt,label){let lines=txt.split(/\n/).map(x=>x.trim()).filter(Boolean),a=[],errs=[];lines.forEach((line,i)=>{let p=line.split("|").map(x=>x.trim());if(p.length<2){errs.push(`${label}, línea ${i+1}: usa "Selección | URL" o "Selección | URL | inicio | fin".`);return}let id=videoId(p[1]);if(!id){errs.push(`${label}, línea ${i+1}: URL no reconocida.`);return}let name=p[0]||`Selección ${String(i+1).padStart(2,"0")}`;if(p.length===2||(p.length>=4&&p[2]===""&&p[3]==="")){a.push({name,id,full:true});return}if(p.length<4){errs.push(`${label}, línea ${i+1}: agrega inicio y fin, o elimina ambos timestamps.`);return}let s=parseTime(p[2]),e=parseTime(p[3]);if(!Number.isFinite(s)||!Number.isFinite(e)||e<=s){errs.push(`${label}, línea ${i+1}: timestamps inválidos.`);return}a.push({name,id,start:s,end:e,full:false})});return {a,errs}}
 
 function switchEditor(side){
  document.getElementById("editA").classList.toggle("active",side==="A");document.getElementById("editB").classList.toggle("active",side==="B");
@@ -126,19 +154,20 @@ function buildBoth(){
 }
 function showPlayer(){document.getElementById("playerCard").classList.remove("hidden");updateTabs();render();if(window.YT&&YT.Player)initOrLoad();else if(!apiRequested){apiRequested=true;let s=document.createElement("script");s.src="https://www.youtube.com/iframe_api";document.body.appendChild(s)}}
 function onYouTubeIframeAPIReady(){if(tracks.length)initOrLoad()}
-function initOrLoad(){let t=tracks[current];if(!t)return;if(player&&player.loadVideoById){load(current,false);return}player=new YT.Player("yt",{videoId:t.id,playerVars:{start:t.start,end:t.end,playsinline:1,rel:0,origin:location.origin.startsWith("http")?location.origin:undefined},events:{onReady:render,onStateChange:onState,onError:e=>{document.getElementById("error").textContent=`YouTube devolvió error ${e.data} en ${activeSide} · ${tracks[current].name}.`}}})}
-function onState(e){clearInterval(timer);if(e.data===YT.PlayerState.PLAYING){timer=setInterval(()=>{let t=tracks[current],now=player.getCurrentTime(),pct=Math.max(0,Math.min(100,(now-t.start)/(t.end-t.start)*100));document.getElementById("bar").style.width=pct+"%";if(now>=t.end-.2){clearInterval(timer);next()}},200)}}
+function playerArgs(t){let x={videoId:t.id};if(!t.full){x.startSeconds=t.start;x.endSeconds=t.end}return x}
+function initOrLoad(){let t=tracks[current];if(!t)return;if(player&&player.loadVideoById){load(current,false);return}let pv={playsinline:1,rel:0,origin:location.origin.startsWith("http")?location.origin:undefined};if(!t.full){pv.start=t.start;pv.end=t.end}player=new YT.Player("yt",{videoId:t.id,playerVars:pv,events:{onReady:render,onStateChange:onState,onError:e=>{document.getElementById("error").textContent=`YouTube devolvió error ${e.data} en ${activeSide} · ${tracks[current].name}.`}}})}
+function onState(e){clearInterval(timer);if(e.data===YT.PlayerState.PLAYING){timer=setInterval(()=>{let t=tracks[current],now=player.getCurrentTime(),dur=t.full?player.getDuration():(t.end-t.start),elapsed=t.full?now:(now-t.start),pct=dur?Math.max(0,Math.min(100,elapsed/dur*100)):0;document.getElementById("bar").style.width=pct+"%";if(!t.full&&now>=t.end-.2){clearInterval(timer);next()}},200)}if(e.data===YT.PlayerState.ENDED&&tracks[current]&&tracks[current].full){next()}}
 function updateTabs(){
  ["A","B"].forEach(s=>{let b=document.getElementById("playTab"+s);b.classList.toggle("active",s===activeSide);b.disabled=!sides[s].length;b.style.opacity=sides[s].length?"1":".4"});
 }
 function switchSide(side){
  if(!sides[side]||!sides[side].length)return;
  activeSide=side;tracks=sides[side];current=0;updateTabs();render();
- if(player&&player.cueVideoById){let t=tracks[0];player.cueVideoById({videoId:t.id,startSeconds:t.start,endSeconds:t.end})}
+ if(player&&player.cueVideoById){player.cueVideoById(playerArgs(tracks[0]))}
 }
-function render(){if(!tracks.length)return;let t=tracks[current];document.getElementById("title").textContent=`Lado ${activeSide} · ${t.name}`;document.getElementById("range").textContent=`${fmt(t.start)} – ${fmt(t.end)} · ${fmt(t.end-t.start)}`;document.getElementById("bar").style.width="0%";let box=document.getElementById("tracklist");box.innerHTML="";tracks.forEach((x,i)=>{let d=document.createElement("div");d.className="track"+(i===current?" active":"");d.innerHTML=`<strong>${esc(x.name)}</strong><small>${fmt(x.start)} – ${fmt(x.end)} · ${fmt(x.end-x.start)}</small>`;d.onclick=()=>load(i,true);box.appendChild(d)})}
-function load(i,play=true){if(!tracks.length)return;current=(i+tracks.length)%tracks.length;render();let t=tracks[current];if(player&&player.loadVideoById){play?player.loadVideoById({videoId:t.id,startSeconds:t.start,endSeconds:t.end}):player.cueVideoById({videoId:t.id,startSeconds:t.start,endSeconds:t.end})}}
-function next(){load(current+1,true)}function previous(){load(current-1,true)}function restart(){if(player){player.seekTo(tracks[current].start,true);player.playVideo()}}function togglePlay(){if(!player)return;player.getPlayerState()===YT.PlayerState.PLAYING?player.pauseVideo():player.playVideo()}
+function render(){if(!tracks.length)return;let t=tracks[current];document.getElementById("title").textContent=`Lado ${activeSide} · ${t.name}`;document.getElementById("range").textContent=t.full?"Video completo":`${fmt(t.start)} – ${fmt(t.end)} · ${fmt(t.end-t.start)}`;document.getElementById("bar").style.width="0%";let box=document.getElementById("tracklist");box.innerHTML="";tracks.forEach((x,i)=>{let d=document.createElement("div");d.className="track"+(i===current?" active":"");let info=x.full?"Video completo":`${fmt(x.start)} – ${fmt(x.end)} · ${fmt(x.end-x.start)}`;d.innerHTML=`<strong>${esc(x.name)}</strong><small>${info}</small>`;d.onclick=()=>load(i,true);box.appendChild(d)})}
+function load(i,play=true){if(!tracks.length)return;current=(i+tracks.length)%tracks.length;render();let t=tracks[current];if(player&&player.loadVideoById){play?player.loadVideoById(playerArgs(t)):player.cueVideoById(playerArgs(t))}}
+function next(){load(current+1,true)}function previous(){load(current-1,true)}function restart(){if(player){let t=tracks[current];player.seekTo(t.full?0:t.start,true);player.playVideo()}}function togglePlay(){if(!player)return;player.getPlayerState()===YT.PlayerState.PLAYING?player.pauseVideo():player.playVideo()}
 function esc(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
 function encodeRound(o){return btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")}
 function decodeRound(x){x=x.replace(/-/g,"+").replace(/_/g,"/");while(x.length%4)x+="=";return JSON.parse(decodeURIComponent(escape(atob(x))))}
@@ -149,5 +178,7 @@ async function makeShareLink(){
  try{await navigator.clipboard.writeText(url);document.getElementById("status").textContent="Link con Lado A + Lado B copiado al portapapeles."}catch(e){prompt("Copia este link:",url)}
 }
 function clearInputs(){document.getElementById("inputA").value="";document.getElementById("inputB").value="";document.getElementById("error").textContent="";document.getElementById("status").textContent=""}
-(function boot(){if(location.hash.startsWith("#r=")){try{let data=decodeRound(location.hash.slice(3));sides=(data.A||data.B)?{A:data.A||[],B:data.B||[]}:{A:data,B:[]};activeSide=sides.A.length?"A":"B";tracks=sides[activeSide];document.getElementById("editor").classList.add("hidden");document.getElementById("mode").textContent="Ronda compartida · Lados A + B";document.getElementById("roundTitle").textContent="Playlist";showPlayer()}catch(e){document.getElementById("error").textContent="No pude leer las playlists del enlace."}}})();
+function applyTheme(mode){document.body.classList.toggle("dark",mode==="dark");let b=document.getElementById("themeBtn");if(b)b.textContent=mode==="dark"?"☀ Modo claro":"☾ Modo nocturno";localStorage.setItem("soundwaves-theme",mode)}
+function toggleTheme(){applyTheme(document.body.classList.contains("dark")?"light":"dark")}
+(function boot(){applyTheme(localStorage.getItem("soundwaves-theme")||"light");if(location.hash.startsWith("#r=")){try{let data=decodeRound(location.hash.slice(3));sides=(data.A||data.B)?{A:data.A||[],B:data.B||[]}:{A:data,B:[]};activeSide=sides.A.length?"A":"B";tracks=sides[activeSide];document.getElementById("editor").classList.add("hidden");document.getElementById("mode").textContent="Ronda compartida · Lados A + B";document.getElementById("roundTitle").textContent="Playlist";showPlayer()}catch(e){document.getElementById("error").textContent="No pude leer las playlists del enlace."}}})();
 </script></body></html>

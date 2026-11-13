@@ -78,6 +78,10 @@ body.dark .footerline{color:#7f8997}
 #roundName{width:100%;max-width:460px;background:#fffdf8;color:#17243b;border:1px solid #d8d1c5;border-radius:10px;padding:12px 14px;font:inherit;outline:none}
 #roundName:focus{border-color:#173b72}
 body.dark #roundName{background:#0f1722;color:#e9e4dc;border-color:#344153}
+#sideConfig{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:12px 0}
+#sideConfig label{display:block;margin-bottom:6px}
+#sideConfig input,#sideCount{width:100%;padding:11px;border:1px solid #d8d1c5;border-radius:9px;background:#fffdf8;color:#17243b;font:inherit}
+body.dark #sideConfig input,body.dark #sideCount{background:#0f1722;color:#e9e4dc;border-color:#344153}
 </style></head>
 <body><div class="wrap">
 <div class="brand">
@@ -95,8 +99,14 @@ body.dark #roundName{background:#0f1722;color:#e9e4dc;border-color:#344153}
 <label for="roundName" class="side-label" style="display:block;margin:14px 0 7px">Nombre de la ronda</label>
 <input id="roundName" type="text" value="Live Edition" maxlength="100" placeholder="Ej. Villain Era" oninput="previewRoundName()" aria-label="Nombre de la ronda">
 <p class="help">El nombre aparecerá en el encabezado y en el enlace compartido.</p>
-<h2 style="margin-top:22px">2. Pega las submissions</h2>
-<p class="help">Fragmento: <code>Selección | URL | inicio | fin</code><br>Video completo: <code>Selección | URL</code>. Cada lado genera su propia playlist.</p>
+<h2 style="margin-top:22px">2. Configura las playlists</h2>
+<div id="sideConfig">
+<div><label class="side-label" for="sideCount">Número de playlists</label><select id="sideCount" onchange="updateConfig()"><option value="1">1 playlist</option><option value="2" selected>2 playlists</option></select></div>
+<div><label class="side-label" for="labelA">Nombre de la playlist 1</label><input id="labelA" value="Lado A" maxlength="70" oninput="updateConfig()"></div>
+<div id="labelBWrap"><label class="side-label" for="labelB">Nombre de la playlist 2</label><input id="labelB" value="Lado B" maxlength="70" oninput="updateConfig()"></div>
+</div>
+<h2 style="margin-top:22px">3. Pega las submissions</h2>
+<p class="help">Fragmento: <code>Selección | URL | inicio | fin</code><br>Video completo: <code>Selección | URL</code>. Puedes combinar videos completos y fragmentos en cada playlist.</p>
 
 <div class="tabs">
 <button class="tabbtn active" id="editTabA" onclick="switchEditor('A')">Lado A</button>
@@ -120,7 +130,7 @@ Selección 02 | https://www.youtube.com/watch?v=UEqTIwRrWvA</textarea>
 <button onclick="clearInputs()">Limpiar</button>
 </div>
 <div id="error"></div><div id="status"></div>
-<p class="help">El enlace compartido contiene ambos lados. Quien lo abra podrá alternar entre <strong>Lado A</strong> y <strong>Lado B</strong>.</p>
+<p class="help">El enlace compartido conservará el número y los nombres de las playlists.</p>
 </div>
 
 <div class="card hidden" id="playerCard">
@@ -142,7 +152,7 @@ Selección 02 | https://www.youtube.com/watch?v=UEqTIwRrWvA</textarea>
 <div class="footerline">One song · One performance · Live</div>
 </div>
 <script>
-let roundName="Live Edition";
+let roundName="Live Edition";\nlet labels={A:"Lado A",B:"Lado B"},sideCount=2;
 let sides={A:[],B:[]},activeSide="A",tracks=[],current=0,player=null,timer=null,apiRequested=false;
 
 function parseTime(x){x=x.trim();if(!/^\d{1,3}:\d{2}(:\d{2})?$/.test(x))return NaN;let p=x.split(":").map(Number);if(p.some(n=>!Number.isFinite(n))||p.some((n,i)=>i>0&&n>59))return NaN;return p.length===2?p[0]*60+p[1]:p[0]*3600+p[1]*60+p[2]}
@@ -152,12 +162,28 @@ function parseLines(txt,label){let lines=txt.split(/\n/).map(x=>x.trim()).filter
 
 function setRoundName(name){roundName=(name||"").trim()||"Live Edition";document.getElementById("brandtag").textContent=roundName;document.title="Soundwaves Music League — "+roundName;}
 function previewRoundName(){setRoundName(document.getElementById("roundName").value);}
+function updateConfig(){
+ sideCount=Number(document.getElementById("sideCount").value);
+ labels={A:document.getElementById("labelA").value.trim()||"Playlist 1",B:document.getElementById("labelB").value.trim()||"Playlist 2"};
+ document.getElementById("labelBWrap").style.display=sideCount===2?"":"none";
+ document.getElementById("editTabA").textContent=labels.A;
+ document.getElementById("editTabB").textContent=labels.B;
+ document.getElementById("playTabA").textContent=labels.A;
+ document.getElementById("playTabB").textContent=labels.B;
+ document.getElementById("editTabB").style.display=sideCount===2?"":"none";
+ document.getElementById("playTabB").style.display=sideCount===2?"":"none";
+ document.querySelector("#editor .tabs").style.display=sideCount===2?"":"none";
+ document.querySelector("#playerCard .tabs").style.display=sideCount===2?"":"none";
+ document.querySelector("#editA .side-label").textContent="Submissions · "+labels.A;
+ document.querySelector("#editB .side-label").textContent="Submissions · "+labels.B;
+ if(sideCount===1)switchEditor("A");
+}
 function switchEditor(side){
  document.getElementById("editA").classList.toggle("active",side==="A");document.getElementById("editB").classList.toggle("active",side==="B");
  document.getElementById("editTabA").classList.toggle("active",side==="A");document.getElementById("editTabB").classList.toggle("active",side==="B");
 }
 function buildBoth(){previewRoundName();
- let a=parseLines(document.getElementById("inputA").value,"Lado A"),b=parseLines(document.getElementById("inputB").value,"Lado B");
+ updateConfig();\n let a=parseLines(document.getElementById("inputA").value,labels.A),b=sideCount===2?parseLines(document.getElementById("inputB").value,labels.B):{a:[],errs:[]};
  let errs=[...a.errs,...b.errs];document.getElementById("error").textContent=errs.join("\n");document.getElementById("status").textContent="";
  if(errs.length||(!a.a.length&&!b.a.length)){sides={A:[],B:[]};return;}
  sides={A:a.a,B:b.a}; activeSide=a.a.length?"A":"B"; tracks=sides[activeSide];current=0;showPlayer();
@@ -165,7 +191,7 @@ function buildBoth(){previewRoundName();
 function showPlayer(){document.getElementById("playerCard").classList.remove("hidden");updateTabs();render();if(window.YT&&YT.Player)initOrLoad();else if(!apiRequested){apiRequested=true;let s=document.createElement("script");s.src="https://www.youtube.com/iframe_api";document.body.appendChild(s)}}
 function onYouTubeIframeAPIReady(){if(tracks.length)initOrLoad()}
 function playerArgs(t){let x={videoId:t.id};if(!t.full){x.startSeconds=t.start;x.endSeconds=t.end}return x}
-function initOrLoad(){let t=tracks[current];if(!t)return;if(player&&player.loadVideoById){load(current,false);return}let pv={playsinline:1,rel:0,origin:location.origin.startsWith("http")?location.origin:undefined};if(!t.full){pv.start=t.start;pv.end=t.end}player=new YT.Player("yt",{videoId:t.id,playerVars:pv,events:{onReady:render,onStateChange:onState,onError:e=>{document.getElementById("error").textContent=`YouTube devolvió error ${e.data} en ${activeSide} · ${tracks[current].name}.`}}})}
+function initOrLoad(){let t=tracks[current];if(!t)return;if(player&&player.loadVideoById){load(current,false);return}let pv={playsinline:1,rel:0,origin:location.origin.startsWith("http")?location.origin:undefined};if(!t.full){pv.start=t.start;pv.end=t.end}player=new YT.Player("yt",{videoId:t.id,playerVars:pv,events:{onReady:render,onStateChange:onState,onError:e=>{document.getElementById("error").textContent=`YouTube devolvió error ${e.data} en ${labels[activeSide]} · ${tracks[current].name}.`}}})}
 function onState(e){clearInterval(timer);if(e.data===YT.PlayerState.PLAYING){timer=setInterval(()=>{let t=tracks[current],now=player.getCurrentTime(),dur=t.full?player.getDuration():(t.end-t.start),elapsed=t.full?now:(now-t.start),pct=dur?Math.max(0,Math.min(100,elapsed/dur*100)):0;document.getElementById("bar").style.width=pct+"%";if(!t.full&&now>=t.end-.2){clearInterval(timer);next()}},200)}if(e.data===YT.PlayerState.ENDED&&tracks[current]&&tracks[current].full){next()}}
 function updateTabs(){
  ["A","B"].forEach(s=>{let b=document.getElementById("playTab"+s);b.classList.toggle("active",s===activeSide);b.disabled=!sides[s].length;b.style.opacity=sides[s].length?"1":".4"});
@@ -175,7 +201,7 @@ function switchSide(side){
  activeSide=side;tracks=sides[side];current=0;updateTabs();render();
  if(player&&player.cueVideoById){player.cueVideoById(playerArgs(tracks[0]))}
 }
-function render(){if(!tracks.length)return;let t=tracks[current];document.getElementById("title").textContent=`Lado ${activeSide} · ${t.name}`;document.getElementById("range").textContent=t.full?"Video completo":`${fmt(t.start)} – ${fmt(t.end)} · ${fmt(t.end-t.start)}`;document.getElementById("bar").style.width="0%";let box=document.getElementById("tracklist");box.innerHTML="";tracks.forEach((x,i)=>{let d=document.createElement("div");d.className="track"+(i===current?" active":"");let info=x.full?"Video completo":`${fmt(x.start)} – ${fmt(x.end)} · ${fmt(x.end-x.start)}`;d.innerHTML=`<strong>${esc(x.name)}</strong><small>${info}</small>`;d.onclick=()=>load(i,true);box.appendChild(d)})}
+function render(){if(!tracks.length)return;let t=tracks[current];document.getElementById("title").textContent=`${labels[activeSide]} · ${t.name}`;document.getElementById("range").textContent=t.full?"Video completo":`${fmt(t.start)} – ${fmt(t.end)} · ${fmt(t.end-t.start)}`;document.getElementById("bar").style.width="0%";let box=document.getElementById("tracklist");box.innerHTML="";tracks.forEach((x,i)=>{let d=document.createElement("div");d.className="track"+(i===current?" active":"");let info=x.full?"Video completo":`${fmt(x.start)} – ${fmt(x.end)} · ${fmt(x.end-x.start)}`;d.innerHTML=`<strong>${esc(x.name)}</strong><small>${info}</small>`;d.onclick=()=>load(i,true);box.appendChild(d)})}
 function load(i,play=true){if(!tracks.length)return;current=(i+tracks.length)%tracks.length;render();let t=tracks[current];if(player&&player.loadVideoById){play?player.loadVideoById(playerArgs(t)):player.cueVideoById(playerArgs(t))}}
 function next(){load(current+1,true)}function previous(){load(current-1,true)}function restart(){if(player){let t=tracks[current];player.seekTo(t.full?0:t.start,true);player.playVideo()}}function togglePlay(){if(!player)return;player.getPlayerState()===YT.PlayerState.PLAYING?player.pauseVideo():player.playVideo()}
 function esc(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
@@ -184,11 +210,21 @@ function decodeRound(x){x=x.replace(/-/g,"+").replace(/_/g,"/");while(x.length%4
 async function makeShareLink(){
  buildBoth();if(!sides.A.length&&!sides.B.length)return;
  if(!location.protocol.startsWith("http")){document.getElementById("error").textContent="Publica primero index.html en GitHub Pages.";return}
- let url=location.origin+location.pathname+"#r="+encodeRound({name:roundName,sides:sides});
- try{await navigator.clipboard.writeText(url);document.getElementById("status").textContent="Link con Lado A + Lado B copiado al portapapeles."}catch(e){prompt("Copia este link:",url)}
+ let url=location.origin+location.pathname+"#r="+encodeRound({name:roundName,sides:sides,labels:labels,count:sideCount});
+ try{await navigator.clipboard.writeText(url);document.getElementById("status").textContent="Link de la ronda copiado al portapapeles."}catch(e){prompt("Copia este link:",url)}
 }
 function clearInputs(){document.getElementById("inputA").value="";document.getElementById("inputB").value="";document.getElementById("error").textContent="";document.getElementById("status").textContent=""}
 function applyTheme(mode){document.body.classList.toggle("dark",mode==="dark");let b=document.getElementById("themeBtn");if(b)b.textContent=mode==="dark"?"☀ Modo claro":"☾ Modo nocturno";localStorage.setItem("soundwaves-theme",mode)}
 function toggleTheme(){applyTheme(document.body.classList.contains("dark")?"light":"dark")}
-(function boot(){applyTheme(localStorage.getItem("soundwaves-theme")||"light");if(location.hash.startsWith("#r=")){try{let data=decodeRound(location.hash.slice(3));if(data.sides){sides={A:data.sides.A||[],B:data.sides.B||[]};setRoundName(data.name||"Live Edition")}else{sides=(data.A||data.B)?{A:data.A||[],B:data.B||[]}:{A:data,B:[]};}activeSide=sides.A.length?"A":"B";tracks=sides[activeSide];document.getElementById("editor").classList.add("hidden");document.getElementById("mode").textContent="Ronda compartida · Lados A + B";document.getElementById("roundTitle").textContent="Playlist";showPlayer()}catch(e){document.getElementById("error").textContent="No pude leer las playlists del enlace."}}})();
+(function boot(){applyTheme(localStorage.getItem("soundwaves-theme")||"light");if(location.hash.startsWith("#r=")){try{let data=decodeRound(location.hash.slice(3));if(data.sides){
+ sides={A:data.sides.A||[],B:data.sides.B||[]};
+ labels={A:data.labels?.A||"Lado A",B:data.labels?.B||"Lado B"};
+ sideCount=data.count===1?1:2;
+ setRoundName(data.name||"Live Edition")
+}else{sides=(data.A||data.B)?{A:data.A||[],B:data.B||[]}:{A:data,B:[]};}activeSide=sides.A.length?"A":"B";tracks=sides[activeSide];
+ document.getElementById("sideCount").value=String(sideCount);
+ document.getElementById("labelA").value=labels.A;document.getElementById("labelB").value=labels.B;
+ updateConfig();
+ document.getElementById("editor").classList.add("hidden");document.getElementById("mode").textContent="Ronda compartida";document.getElementById("roundTitle").textContent="Playlist";showPlayer()}catch(e){document.getElementById("error").textContent="No pude leer las playlists del enlace."}}})();
+updateConfig();
 </script></body></html>

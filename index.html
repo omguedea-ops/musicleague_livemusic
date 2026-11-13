@@ -152,7 +152,8 @@ Selección 02 | https://www.youtube.com/watch?v=UEqTIwRrWvA</textarea>
 <div class="footerline">One song · One performance · Live</div>
 </div>
 <script>
-let roundName="Live Edition";\nlet labels={A:"Lado A",B:"Lado B"},sideCount=2;
+let roundName="Live Edition";
+let labels={A:"Lado A",B:"Lado B"},sideCount=2;
 let sides={A:[],B:[]},activeSide="A",tracks=[],current=0,player=null,timer=null,apiRequested=false;
 
 function parseTime(x){x=x.trim();if(!/^\d{1,3}:\d{2}(:\d{2})?$/.test(x))return NaN;let p=x.split(":").map(Number);if(p.some(n=>!Number.isFinite(n))||p.some((n,i)=>i>0&&n>59))return NaN;return p.length===2?p[0]*60+p[1]:p[0]*3600+p[1]*60+p[2]}
@@ -183,7 +184,8 @@ function switchEditor(side){
  document.getElementById("editTabA").classList.toggle("active",side==="A");document.getElementById("editTabB").classList.toggle("active",side==="B");
 }
 function buildBoth(){previewRoundName();
- updateConfig();\n let a=parseLines(document.getElementById("inputA").value,labels.A),b=sideCount===2?parseLines(document.getElementById("inputB").value,labels.B):{a:[],errs:[]};
+ updateConfig();
+ let a=parseLines(document.getElementById("inputA").value,labels.A),b=sideCount===2?parseLines(document.getElementById("inputB").value,labels.B):{a:[],errs:[]};
  let errs=[...a.errs,...b.errs];document.getElementById("error").textContent=errs.join("\n");document.getElementById("status").textContent="";
  if(errs.length||(!a.a.length&&!b.a.length)){sides={A:[],B:[]};return;}
  sides={A:a.a,B:b.a}; activeSide=a.a.length?"A":"B"; tracks=sides[activeSide];current=0;showPlayer();
